@@ -1,0 +1,33 @@
+# YAML pipeline to deploy application group to Azure Virtual Desktop
+name: AVD-deploy-appgroup
+
+trigger:
+  - main
+
+pool:
+  vmImage: 'windows-latest'
+
+steps:
+  - task: AzureCLI@2
+    inputs:
+      azureSubscription: 'your-subscription'
+      scriptLocation: 'inlineScript'
+      inlineScript: |
+        # Install the Azure Virtual Desktop PowerShell module
+        Install-Module -Name Microsoft.RDInfra.RDPowerShell -Force
+
+        # Connect to the Azure Virtual Desktop tenant
+        Connect-RdsAccount -DeploymentUrl 'https://rdbroker.wvd.microsoft.com'
+
+        # Set the variables for the host pool and application group
+        $hostPoolName = 'MyHostPool'
+        $appGroupName = 'MyAppGroup'
+
+        # Create a new application group
+        New-RdsAppGroup -HostPoolName $hostPoolName -Name $appGroupName
+
+        # Add a remote app to the application group
+        Add-RdsApp -AppGroup $appGroupName -Name 'MyRemoteApp' -CommandLineSetting 'notepad.exe' -FilePath '\\Server\Share\MyRemoteApp.exe'
+
+        # Publish the application group to the host pool
+        Publish-RdsAppGroup -Name $appGroupName -HostPoolName $hostPoolName
